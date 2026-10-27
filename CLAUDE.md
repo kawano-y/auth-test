@@ -4,8 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 現状
 
-まだコードはない。リモートは `https://github.com/kawano-y/auth-test.git`、デフォルトブランチは `main`。
-ビルドは Gradle（Groovy DSL、Gradle Wrapper 同梱）。PR1 で雛形を作ったら、ビルド・テスト・単体テスト実行のコマンドをここに追記すること。
+PR1 の雛形まで。リモートは `https://github.com/kawano-y/auth-test.git`、デフォルトブランチは `main`。
+パッケージは `com.example.authtest`、メインクラスは `Application`。
+
+## コマンド
+
+ビルドは Gradle（Groovy DSL、Gradle Wrapper 同梱）。Java 25 はツールチェーン指定で、ローカルに無ければ foojay で自動ダウンロードされる（Gradle 自体は JDK 17 以上で動く）。
+
+- ビルド（テスト込み）: `./gradlew build`
+- テストのみ: `./gradlew test`
+- 単体テスト（1クラス / 1メソッド）: `./gradlew test --tests 'com.example.authtest.ApplicationTests'` / `--tests 'com.example.authtest.ApplicationTests.contextLoads'`
+- 起動: `./gradlew bootRun`（http://localhost:8080）
 
 ## 仕様
 
