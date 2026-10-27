@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 現状
 
-PR1 の雛形まで。リモートは `https://github.com/kawano-y/auth-test.git`、デフォルトブランチは `main`。
+1ステップ = 1PR で実装中（どこまで進んだかは git log を見る）。リモートは `https://github.com/kawano-y/auth-test.git`、デフォルトブランチは `main`。
 パッケージは `com.example.authtest`、メインクラスは `Application`。
 
 ## コマンド
@@ -48,6 +48,8 @@ Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照
 
 ## 注意点
 
+- application.yml の `${COGNITO_*}` は未設定だと起動時に失敗する。テスト用のダミー値は `src/test/resources/application.properties` に置いている。
+- Spring Security 7 では、JWT 認証すると `cognito:groups` 由来の権限に加えて `FACTOR_BEARER` が自動で付く。権限の一覧を完全一致で検証するときは注意。
 - data.sql と JPA のテーブル自動生成を併用する場合、`spring.jpa.defer-datasource-initialization=true` が必要。
 - Spring Boot 4 ではスターター名が変わっている: `spring-boot-starter-webmvc`（旧 `-web`）、`spring-boot-starter-security-oauth2-resource-server`、`spring-boot-starter-security-oauth2-client`。thymeleaf・data-jpa・security は名前そのまま。古い情報の Boot 3 の書き方を持ち込まないこと。
 - IDE（`.idea/misc.xml`）のプロジェクトJDKは openjdk-23 のままなので、JDK 25 に切り替える必要がある。
