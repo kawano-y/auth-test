@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>見積詳細 - auth-test</title>
+</head>
+<body>
+<h1>見積詳細</h1>
+<dl>
+  <dt>ID</dt>
+  <dd th:text="${estimate.id}">1</dd>
+  <dt>件名</dt>
+  <dd th:text="${estimate.title}">A社 基幹システム改修</dd>
+  <dt>金額（円）</dt>
+  <dd th:text="${#numbers.formatInteger(estimate.amount, 1, 'COMMA')}">12,000,000</dd>
+  <dt>部署</dt>
+  <dd th:text="${estimate.departmentName}">営業1課</dd>
+  <dt>作成日時</dt>
+  <dd th:text="${#temporals.format(estimate.createdAt, 'yyyy-MM-dd HH:mm')}">2026-09-01 10:00</dd>
+</dl>
+<p><a th:href="@{/estimates}">見積一覧へ戻る</a></p>
+</body>
+</html>

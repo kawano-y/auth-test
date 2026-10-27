@@ -222,3 +222,17 @@ H2 は起動のたびに空になるので、アプリを再起動すると `use
 ```bash
 ./gradlew test --tests 'com.example.authtest.web.ScreenSecurityTest'
 ```
+
+### 見積画面（PR8）
+
+見積一覧（`/estimates`）と詳細（`/estimates/{id}`）。API と同じ Service を使い、ID トークンの `sub` で部署を絞り込む。403・404 のときは `templates/error/` のエラー画面が出る。トップ（`/`）から見積一覧へのリダイレクトは PR9 で入れるので、この時点では URL を直接開く。
+
+1. 営業1課のユーザーでログインし、http://localhost:8080/estimates を開く。上部に名前・部署名（営業1課）・ログアウトボタンがあり、営業1課の見積 3件だけが出る
+2. 件名のリンクから詳細を開ける
+3. URL に営業2課の見積 ID（http://localhost:8080/estimates/4 ）を入れると 404 のエラー画面になる。存在しない ID（例: 9999）も同じ画面
+4. ログアウトして管理者でログインし直すと、部署は管理部で「見積はありません」と出る
+5. アプリを再起動すると `users` から営業課のユーザーが消えるので、そのユーザーで /estimates を開くと 403 のエラー画面になる（Cognito ではログインできるが、アプリに未登録）
+
+```bash
+./gradlew test --tests 'com.example.authtest.web.EstimatePageTest'
+```
