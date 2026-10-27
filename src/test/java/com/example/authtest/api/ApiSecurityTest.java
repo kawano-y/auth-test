@@ -73,9 +73,9 @@ class ApiSecurityTest {
 	void adminパスはADMINなら通る() throws Exception {
 		givenToken(List.of("ADMIN"));
 
-		// まだエンドポイントがないので 404 になる（403 でないことの確認）
+		// /api/admin/users は POST だけなので GET は 405 になる（403 でないことの確認）
 		mockMvc.perform(get("/api/admin/users").header("Authorization", "Bearer " + TOKEN))
-			.andExpect(status().isNotFound());
+			.andExpect(status().isMethodNotAllowed());
 	}
 
 	@Test

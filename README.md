@@ -135,3 +135,72 @@ sub は Cognito コンソールのユーザー詳細で確認できる。アク�
 ```bash
 ./gradlew test --tests 'com.example.authtest.api.EstimateApiTest'
 ```
+
+### 管理者ユーザー登録 API（PR6）
+
+`POST /api/admin/users`（ADMIN のみ）で、Cognito にユーザーを作成し（`AdminCreateUser`）、返ってきた `sub` で `users` に保存する。Cognito から一時パスワード入りの招待メールが届く。
+
+アプリが `AdminCreateUser` を呼ぶので、仕様書「事前準備（PR0）」の手順4の権限を持つ AWS 認証情報が必要（AWS SDK のデフォルトのクレデンシャルチェーンを使う）。既定プロファイル以外を使うなら、起動前に `export AWS_PROFILE=<プロファイル名>` を設定する。
+
+SSO（IAM Identity Center）のプロファイルを使う場合は、起動前にログインしておく。アプリ（AWS SDK）はこのときキャッシュされたトークンを使う。期限が切れたらログインし直す。
+
+```bash
+aws sso login --profile <プロファイル名>
+export AWS_PROFILE=<プロファイル名>
+```
+
+SSO の場合、権限は使っている許可セットで決まる。許可セットに `cognito-idp:AdminCreateUser` が含まれていること（`AdministratorAccess` などなら含まれる。最小権限にするなら手順4のポリシーを許可セットのインラインポリシーに追加する）。
+
+| ケース | 結果 |
+| --- | --- |
+| 登録成功 | 201、作成したユーザー |
+| 入力不正（空欄・メール形式） | 400（ProblemDetail。`errors` に項目ごとのメッセージ） |
+| JSON として読めない（構文エラー、UTF-8 以外の文字コード） | 400（ProblemDetail） |
+| 存在しない部署 | 400（ProblemDetail。Cognito は呼ばない） |
+| メール重複 | 409（ProblemDetail） |
+| ADMIN 以外 | 403 |
+
+部署 ID は 営業1課 = 1、営業2課 = 2、管理部 = 3。
+
+1. 管理者のトークン（`TOKEN`）で、営業1課・営業2課のユーザーを1人ずつ作る。メールは実際に届くアドレスにする（Gmail なら `you+sales1@gmail.com` のような別名が使える）
+
+    ```bash
+    curl -i -X POST http://localhost:8080/api/admin/users \
+      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+      -d '{"email": "<営業1課のメール>", "name": "sales1", "departmentId": 1}'
+    ```
+
+    営業2課も `departmentId` を 2 にして同様に作る。同じメールでもう一度送ると 409 になる。
+
+    Git Bash から Windows の curl に日本語を渡すと Shift_JIS で送られ、JSON を読めず 400 になる。コマンドラインでは英数字にするか、UTF-8 で保存したファイルを `--data-binary @user.json` で送る。
+
+2. 招待メールの一時パスワードで初回パスワード変更を済ませる（仕様書「3. 最初の管理者を作る」の手順4と同じ。マネージドログイン画面か、CLI の `respond-to-auth-challenge`）
+
+    マネージドログイン画面で変えると、最後にアプリのコールバック URL へ戻されて 403 のエラー画面が出る。画面ログインは PR7 で作るので、この時点ではこれでよい（パスワード変更は済んでいる）。
+
+3. 営業1課ユーザーのトークンを取り、自部署の見積だけ返ることを確認する
+
+    ```bash
+    SALES1_TOKEN=$(aws cognito-idp initiate-auth --region ap-northeast-1 \
+      --client-id $COGNITO_CLIENT_ID \
+      --auth-flow USER_PASSWORD_AUTH \
+      --auth-parameters '{"USERNAME": "<営業1課のメール>", "PASSWORD": "<パスワード>"}' \
+      --query AuthenticationResult.AccessToken --output text)
+
+    curl -s -H "Authorization: Bearer $SALES1_TOKEN" http://localhost:8080/api/estimates
+    # 営業1課の見積 3件だけが返る
+    curl -i -H "Authorization: Bearer $SALES1_TOKEN" http://localhost:8080/api/estimates/4
+    # 営業2課の見積なので 404
+    ```
+
+    `--auth-parameters` は JSON 形式で渡す。`USERNAME=...,PASSWORD=...` の形式だと、パスワードに `,` などが含まれるとうまく渡らず `NotAuthorizedException` になる。
+
+4. 一般ユーザー（営業1課）のトークンで登録 API を叩くと 403 になる
+
+    ```bash
+    curl -i -X POST http://localhost:8080/api/admin/users \
+      -H "Authorization: Bearer $SALES1_TOKEN" -H "Content-Type: application/json" \
+      -d '{"email": "x@example.com", "name": "x", "departmentId": 1}'
+    ```
+
+H2 は起動のたびに空になるので、アプリを再起動すると `users` から営業課のユーザーが消える（Cognito には残る）。その状態でトークンを使うと 403 になる。Cognito に残ったユーザーと同じメールで登録し直すと 409 になるので、確認し直すときは Cognito コンソールでユーザーを削除するか、別のメールを使う。
