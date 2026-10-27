@@ -5,3 +5,6 @@ spring:
         jwt:
           # 署名検証用の公開鍵（JWKS）はここから辿って取得する。最初のリクエスト時に取りに行く
           issuer-uri: https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}
+  jpa:
+    # data.sql の実行を、Hibernate がテーブルを作った後まで遅らせる（既定では data.sql が先に動いて失敗する）
+    defer-datasource-initialization: true

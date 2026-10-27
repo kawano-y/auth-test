@@ -56,3 +56,23 @@ PowerShell の場合は `$env:COGNITO_REGION = "ap-northeast-1"` のように設
     ```bash
     curl -i -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/admin/users
     ```
+
+### テーブル・初期データ（PR3）
+
+起動すると H2 インメモリ DB に `departments`・`users`・`estimates` テーブルが Entity から自動生成され、`src/main/resources/data.sql` の初期データが入る（起動のたびに空から作り直される）。
+
+| 部署（id） | 見積 |
+| --- | --- |
+| 営業1課（1） | 3件 |
+| 営業2課（2） | 2件 |
+| 管理部（3） | なし |
+
+`users` は空。最初の管理者は PR4 の起動時処理で入る。
+
+まだ API や画面からは見えないので、リポジトリのテストで確認する。
+
+```bash
+./gradlew test --tests 'com.example.authtest.domain.RepositoryTest'
+```
+
+`./gradlew bootRun` で起動したときに、ログにエラーが出ず `Started Application` まで進めば、テーブル作成と data.sql の投入も成功している。
