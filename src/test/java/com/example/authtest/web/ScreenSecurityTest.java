@@ -1,12 +1,10 @@
 package com.example.authtest.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,13 +65,10 @@ class ScreenSecurityTest {
 	}
 
 	@Test
-	void ログイン済みならトップ画面にメールと権限が出る() throws Exception {
-		mockMvc.perform(get("/").with(oidcLogin()
-				.idToken(token -> token.subject("user-sub").claim("email", "user@example.com"))
-				.authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
-			.andExpect(status().isOk())
-			.andExpect(content().string(containsString("user@example.com")))
-			.andExpect(content().string(containsString("ROLE_ADMIN")));
+	void ログイン済みならトップは見積一覧へリダイレクト() throws Exception {
+		mockMvc.perform(get("/").with(oidcLogin()))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/estimates"));
 	}
 
 	@Test
@@ -90,10 +85,9 @@ class ScreenSecurityTest {
 
 	@Test
 	void adminパスはADMINなら通る() throws Exception {
-		// まだ画面がないので 404 になる（403 でないことの確認）
 		mockMvc.perform(get("/admin/users/new")
 				.with(oidcLogin().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
-			.andExpect(status().isNotFound());
+			.andExpect(status().isOk());
 	}
 
 	@Test
