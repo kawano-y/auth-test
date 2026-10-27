@@ -97,3 +97,41 @@ sub は Cognito コンソールのユーザー詳細で確認できる。アク�
     ```
 
 アプリが実際に `users` を参照するのは PR5（見積 API）から。
+
+### 見積 API・部署別認可（PR5）
+
+トークンの `sub` で `users` を引き、所属部署の見積だけを返す。
+
+| ケース | 結果 |
+| --- | --- |
+| `GET /api/estimates` | 自部署の見積の一覧 |
+| `GET /api/estimates/{id}`（自部署） | 見積の詳細 |
+| `GET /api/estimates/{id}`（他部署・存在しない ID） | 404（他部署の見積があることを隠す） |
+| `users` にいない `sub` | 403 |
+
+この時点で `users` にいるのは管理者（管理部、見積0件）だけなので、管理者のトークンで次のように確認する。`TOKEN` の取り方は PR2 の手順と同じ。
+
+1. 一覧は空になる（管理部の見積はない）
+
+    ```bash
+    curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/estimates
+    # []
+    ```
+
+2. 他部署（営業1課）の見積 ID を指定すると 404 になる
+
+    ```bash
+    curl -i -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/estimates/1
+    ```
+
+3. `ADMIN_SUB` に別の値（例: `dummy`）を入れて起動し直すと、管理者のトークンでも `users` にいない扱いになり 403 になる
+
+    ```bash
+    curl -i -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/estimates
+    ```
+
+営業1課・営業2課のユーザーでの確認（自部署の見積だけ返ること）は、ユーザー登録 API ができる PR6 以降で行う。テストでは営業1課のユーザーを直接 `users` に入れて確認している。
+
+```bash
+./gradlew test --tests 'com.example.authtest.api.EstimateApiTest'
+```
