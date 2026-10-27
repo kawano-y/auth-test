@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.Charset;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -109,6 +110,30 @@ class AdminUserApiTest {
 			.andExpect(jsonPath("$.errors.departmentId").exists());
 
 		verify(cognitoClient, never()).adminCreateUser(any(AdminCreateUserRequest.class));
+	}
+
+	@Test
+	void UTF8でないJSONは400() throws Exception {
+		// Windows の curl に日本語を渡すと Shift_JIS で送られることがある。その再現
+		byte[] shiftJis = """
+				{"email": "sales1@example.com", "name": "営業1課ユーザー", "departmentId": %d}
+				""".formatted(sales1Id).getBytes(Charset.forName("Shift_JIS"));
+
+		mockMvc.perform(post("/api/admin/users")
+				.header("Authorization", "Bearer " + ADMIN_TOKEN)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(shiftJis))
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+
+		verify(cognitoClient, never()).adminCreateUser(any(AdminCreateUserRequest.class));
+	}
+
+	@Test
+	void JSONの構文エラーは400() throws Exception {
+		postUser(ADMIN_TOKEN, "{\"email\": ")
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
 	}
 
 	@Test

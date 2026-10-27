@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -50,6 +51,13 @@ public class AdminUserController {
 				error -> String.valueOf(error.getDefaultMessage()), (first, second) -> first));
 		problem.setProperty("errors", errors);
 		return problem;
+	}
+
+	/** JSON として読めない（構文エラー、UTF-8 でない文字コードなど）も入力不正として 400 */
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	ProblemDetail handleUnreadable(HttpMessageNotReadableException e) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+			"リクエストの JSON を読み取れません（UTF-8 の JSON で送ってください）");
 	}
 
 	@ExceptionHandler(DepartmentNotFoundException.class)

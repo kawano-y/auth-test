@@ -155,6 +155,7 @@ SSO の場合、権限は使っている許可セットで決まる。許可セ�
 | --- | --- |
 | 登録成功 | 201、作成したユーザー |
 | 入力不正（空欄・メール形式） | 400（ProblemDetail。`errors` に項目ごとのメッセージ） |
+| JSON として読めない（構文エラー、UTF-8 以外の文字コード） | 400（ProblemDetail） |
 | 存在しない部署 | 400（ProblemDetail。Cognito は呼ばない） |
 | メール重複 | 409（ProblemDetail） |
 | ADMIN 以外 | 403 |
@@ -166,12 +167,16 @@ SSO の場合、権限は使っている許可セットで決まる。許可セ�
     ```bash
     curl -i -X POST http://localhost:8080/api/admin/users \
       -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-      -d '{"email": "<営業1課のメール>", "name": "営業1課ユーザー", "departmentId": 1}'
+      -d '{"email": "<営業1課のメール>", "name": "sales1", "departmentId": 1}'
     ```
 
     営業2課も `departmentId` を 2 にして同様に作る。同じメールでもう一度送ると 409 になる。
 
+    Git Bash から Windows の curl に日本語を渡すと Shift_JIS で送られ、JSON を読めず 400 になる。コマンドラインでは英数字にするか、UTF-8 で保存したファイルを `--data-binary @user.json` で送る。
+
 2. 招待メールの一時パスワードで初回パスワード変更を済ませる（仕様書「3. 最初の管理者を作る」の手順4と同じ。マネージドログイン画面か、CLI の `respond-to-auth-challenge`）
+
+    マネージドログイン画面で変えると、最後にアプリのコールバック URL へ戻されて 403 のエラー画面が出る。画面ログインは PR7 で作るので、この時点ではこれでよい（パスワード変更は済んでいる）。
 
 3. 営業1課ユーザーのトークンを取り、自部署の見積だけ返ることを確認する
 
@@ -179,7 +184,7 @@ SSO の場合、権限は使っている許可セットで決まる。許可セ�
     SALES1_TOKEN=$(aws cognito-idp initiate-auth --region ap-northeast-1 \
       --client-id $COGNITO_CLIENT_ID \
       --auth-flow USER_PASSWORD_AUTH \
-      --auth-parameters USERNAME='<営業1課のメール>',PASSWORD='<パスワード>' \
+      --auth-parameters '{"USERNAME": "<営業1課のメール>", "PASSWORD": "<パスワード>"}' \
       --query AuthenticationResult.AccessToken --output text)
 
     curl -s -H "Authorization: Bearer $SALES1_TOKEN" http://localhost:8080/api/estimates
@@ -187,6 +192,8 @@ SSO の場合、権限は使っている許可セットで決まる。許可セ�
     curl -i -H "Authorization: Bearer $SALES1_TOKEN" http://localhost:8080/api/estimates/4
     # 営業2課の見積なので 404
     ```
+
+    `--auth-parameters` は JSON 形式で渡す。`USERNAME=...,PASSWORD=...` の形式だと、パスワードに `,` などが含まれるとうまく渡らず `NotAuthorizedException` になる。
 
 4. 一般ユーザー（営業1課）のトークンで登録 API を叩くと 403 になる
 
