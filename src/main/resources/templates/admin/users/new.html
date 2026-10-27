@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>ユーザー登録 - auth-test</title>
+</head>
+<body>
+<h1>ユーザー登録</h1>
+<!-- 登録後のリダイレクトで、フラッシュ属性の message が1回だけ渡ってくる -->
+<p th:if="${message}" th:text="${message}">user@example.com を登録しました。</p>
+<!--
+  th:object と th:field で userForm の値をフォームに入れる（再表示のとき入力値が残る）。
+  th:errors はその項目のエラーメッセージを出す。th:action なので CSRF トークンも自動で入る。
+-->
+<form th:action="@{/admin/users}" th:object="${userForm}" method="post">
+  <p>
+    <label for="email">メールアドレス</label>
+    <input type="text" id="email" th:field="*{email}">
+    <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}">エラー</span>
+  </p>
+  <p>
+    <label for="name">名前</label>
+    <input type="text" id="name" th:field="*{name}">
+    <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}">エラー</span>
+  </p>
+  <p>
+    <label for="departmentId">部署</label>
+    <select id="departmentId" th:field="*{departmentId}">
+      <option value="">選択してください</option>
+      <option th:each="department : ${departments}" th:value="${department.id}"
+              th:text="${department.name}">営業1課</option>
+    </select>
+    <span th:if="${#fields.hasErrors('departmentId')}" th:errors="*{departmentId}">エラー</span>
+  </p>
+  <button type="submit">登録</button>
+</form>
+<p><a th:href="@{/estimates}">見積一覧へ</a></p>
+</body>
+</html>
