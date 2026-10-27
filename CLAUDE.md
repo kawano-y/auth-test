@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 仕様
 
-仕様書: https://claude.ai/artifact/EZVLhRRLBuSckQ9mxBz6oE （Claude Docs。読むときは docs ツールを使い、Web取得はしない）
+仕様書: [docs/spec.md](docs/spec.md)（2026-10-27 時点の写し）。元は https://claude.ai/artifact/EZVLhRRLBuSckQ9mxBz6oE （Claude Docs。読むときは docs ツールを使い、Web取得はしない）。元を更新したら docs/spec.md も書き出し直す。
 
 Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照できる」認可を検証する最小構成。
 
