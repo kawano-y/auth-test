@@ -8,3 +8,12 @@ spring:
   jpa:
     # data.sql の実行を、Hibernate がテーブルを作った後まで遅らせる（既定では data.sql が先に動いて失敗する）
     defer-datasource-initialization: true
+
+app:
+  # 起動時に users に登録する最初の管理者（AdminUserInitializer）
+  admin:
+    # Cognito で作った管理者の sub。トークンの sub と突き合わせるので、これだけは実際の値が必要
+    sub: ${ADMIN_SUB}
+    # 表示用。Cognito 側の値とずれていても認可には影響しない
+    email: admin@example.com
+    name: 管理者

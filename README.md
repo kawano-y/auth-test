@@ -17,6 +17,7 @@ Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照
 export COGNITO_REGION=ap-northeast-1
 export COGNITO_USER_POOL_ID=<ユーザープールID>
 export COGNITO_CLIENT_ID=<アプリクライアントID>
+export ADMIN_SUB=<最初の管理者の sub>
 ./gradlew bootRun
 ```
 
@@ -76,3 +77,23 @@ PowerShell の場合は `$env:COGNITO_REGION = "ap-northeast-1"` のように設
 ```
 
 `./gradlew bootRun` で起動したときに、ログにエラーが出ず `Started Application` まで進めば、テーブル作成と data.sql の投入も成功している。
+
+### 最初の管理者の登録（PR4）
+
+起動時に、環境変数 `ADMIN_SUB` の sub で管理者を `users` に登録する（所属は管理部）。H2 は起動のたびに空になるので、毎回入れ直している。`ADMIN_SUB` が未設定だと起動に失敗する。
+
+sub は Cognito コンソールのユーザー詳細で確認できる。アクセストークンの `sub` と同じ値なので、PR2 の `/api/me` が返す `sub` を使ってもよい。
+
+1. `ADMIN_SUB` を設定して起動すると、ログに次の行が出る
+
+    ```
+    最初の管理者を登録しました: sub=<ADMIN_SUB の値>, department=管理部
+    ```
+
+2. 登録内容はテストでも確認できる
+
+    ```bash
+    ./gradlew test --tests 'com.example.authtest.init.AdminUserInitializerTest'
+    ```
+
+アプリが実際に `users` を参照するのは PR5（見積 API）から。
