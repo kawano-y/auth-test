@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>403 - auth-test</title>
+</head>
+<body>
+<!--
+  Spring Boot は、ステータスが 403 になったリクエストを /error に転送し、templates/error/403.html があればそれを表示する。
+  権限なし（/admin/** を ADMIN 以外が開いた）と、users に未登録（Cognito にはいるがアプリにいない）の両方がここに来る。
+-->
+<h1>アクセスできません（403）</h1>
+<p>この画面を表示する権限がないか、アプリにユーザーが登録されていません。管理者に問い合わせてください。</p>
+<p><a th:href="@{/estimates}">見積一覧へ</a></p>
+<form th:action="@{/logout}" method="post">
+  <button type="submit">ログアウト</button>
+</form>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>見積一覧 - auth-test</title>
+</head>
+<body>
+<header>
+  <span th:text="${loginUser.name}">山田太郎</span>
+  （<span th:text="${loginUser.departmentName}">営業1課</span>）
+  <!-- th:action を使うと、Spring Security の CSRF トークンが hidden で自動的に入る -->
+  <form th:action="@{/logout}" method="post" style="display: inline">
+    <button type="submit">ログアウト</button>
+  </form>
+</header>
+<h1>見積一覧</h1>
+<p th:if="${estimates.isEmpty()}">見積はありません</p>
+<table th:unless="${estimates.isEmpty()}" border="1">
+  <thead>
+    <tr><th>ID</th><th>件名</th><th>金額（円）</th><th>作成日時</th></tr>
+  </thead>
+  <tbody>
+    <tr th:each="estimate : ${estimates}">
+      <td th:text="${estimate.id}">1</td>
+      <td><a th:href="@{/estimates/{id}(id=${estimate.id})}" th:text="${estimate.title}">A社 基幹システム改修</a></td>
+      <td th:text="${#numbers.formatInteger(estimate.amount, 1, 'COMMA')}">12,000,000</td>
+      <td th:text="${#temporals.format(estimate.createdAt, 'yyyy-MM-dd HH:mm')}">2026-09-01 10:00</td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>
