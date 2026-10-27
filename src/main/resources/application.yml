@@ -5,6 +5,23 @@ spring:
         jwt:
           # 署名検証用の公開鍵（JWKS）はここから辿って取得する。最初のリクエスト時に取りに行く
           issuer-uri: https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      # 画面のログイン（oauth2Login）。認可コードフローで Cognito のマネージドログインへリダイレクトする
+      client:
+        registration:
+          cognito:
+            client-id: ${COGNITO_CLIENT_ID}
+            # クライアントシークレットなし（パブリッククライアント）。この場合 Spring Security は自動で PKCE を使う
+            client-authentication-method: none
+            authorization-grant-type: authorization_code
+            scope: openid,email
+            # redirect-uri は既定の {baseUrl}/login/oauth2/code/{registrationId}
+            # （= http://localhost:8080/login/oauth2/code/cognito。Cognito のコールバック URL と一致させる）
+        provider:
+          cognito:
+            # 起動時にここの /.well-known/openid-configuration を取りに行き、認可・トークンなどのエンドポイントを知る
+            issuer-uri: https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}
+            # ログインユーザー名（Authentication#getName）に使うクレーム。既定は sub
+            user-name-attribute: email
   jpa:
     # data.sql の実行を、Hibernate がテーブルを作った後まで遅らせる（既定では data.sql が先に動いて失敗する）
     defer-datasource-initialization: true

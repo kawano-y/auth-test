@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>auth-test</title>
+</head>
+<body>
+<h1>ログイン中</h1>
+<dl>
+  <dt>メール</dt>
+  <dd th:text="${email}">user@example.com</dd>
+  <dt>sub</dt>
+  <dd th:text="${sub}">sub</dd>
+  <dt>権限</dt>
+  <dd th:text="${#strings.listJoin(authorities, ', ')}">ROLE_ADMIN</dd>
+</dl>
+<!-- th:action を使うと、Spring Security の CSRF トークンが hidden で自動的に入る -->
+<form th:action="@{/logout}" method="post">
+  <button type="submit">ログアウト</button>
+</form>
+</body>
+</html>

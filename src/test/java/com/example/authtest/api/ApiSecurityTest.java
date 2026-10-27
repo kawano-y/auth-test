@@ -78,12 +78,6 @@ class ApiSecurityTest {
 			.andExpect(status().isMethodNotAllowed());
 	}
 
-	@Test
-	void api以外は拒否() throws Exception {
-		mockMvc.perform(get("/"))
-			.andExpect(status().isForbidden());
-	}
-
 	/** Cognito はグループに入っていないユーザーのトークンには cognito:groups を含めない */
 	private void givenToken(List<String> groups) {
 		Jwt.Builder builder = Jwt.withTokenValue(TOKEN)
