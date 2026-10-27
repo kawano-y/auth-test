@@ -17,6 +17,7 @@ Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照
 export COGNITO_REGION=ap-northeast-1
 export COGNITO_USER_POOL_ID=<ユーザープールID>
 export COGNITO_CLIENT_ID=<アプリクライアントID>
+export COGNITO_DOMAIN=https://<ドメインプレフィックス>.auth.ap-northeast-1.amazoncognito.com
 export ADMIN_SUB=<最初の管理者の sub>
 ./gradlew bootRun
 ```
@@ -204,3 +205,20 @@ SSO の場合、権限は使っている許可セットで決まる。許可セ�
     ```
 
 H2 は起動のたびに空になるので、アプリを再起動すると `users` から営業課のユーザーが消える（Cognito には残る）。その状態でトークンを使うと 403 になる。Cognito に残ったユーザーと同じメールで登録し直すと 409 になるので、確認し直すときは Cognito コンソールでユーザーを削除するか、別のメールを使う。
+
+### 画面ログイン（PR7）
+
+`/api/**` 以外の画面は、未ログインなら Cognito のマネージドログインへリダイレクトする（認可コード + PKCE、クライアントシークレットなし）。ログイン後のトークンはサーバーのセッションに置き、ブラウザには `JSESSIONID` の Cookie だけを渡す。
+
+起動時に Cognito へ OIDC discovery（`/.well-known/openid-configuration` の取得）の通信が発生する。環境変数 `COGNITO_DOMAIN` にはマネージドログインのドメインを `https://` から入れる（Cognito コンソールの「ドメイン」に出ている値。ログアウトで使う）。
+
+1. ブラウザで http://localhost:8080/ を開くと、Cognito のログイン画面へリダイレクトされる
+2. 管理者でログインすると、トップ画面にメール・sub・権限（`ROLE_ADMIN`）が出る。営業課のユーザーなら権限は空
+3. 「ログアウト」を押すと、アプリのセッションを消したうえで Cognito の `/logout` へリダイレクトされ、Cognito のログイン状態も消える。その後 http://localhost:8080/ に戻り、未ログインなので再びログイン画面になる
+4. 営業課のユーザーで http://localhost:8080/admin/users/new を開くと 403 のエラー画面になる（管理者なら、まだ画面がないので 404）
+
+ログインのたびにパスワードを聞かれない場合は、ログアウトで Cognito 側のログイン状態が消えていない。Cognito のアプリクライアントの「許可されているサインアウト URL」が `http://localhost:8080/` と完全に一致しているか確認する。
+
+```bash
+./gradlew test --tests 'com.example.authtest.web.ScreenSecurityTest'
+```
