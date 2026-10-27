@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照できる」認可を検証する最小構成。
 
-- Java 23 / Spring Boot 3、H2 インメモリ
+- Java 25（LTS）/ Spring Boot 4.1 系（PR1 時点の最新）、H2 インメモリ
 - 画面は Thymeleaf（見積一覧・詳細、ユーザー登録）。API は `/api/**` 配下で、AWS CLI で取ったトークンと curl でも確認する
 - ローカル実行。Cognito は AWS 上の実ユーザープールを使う（エミュレータなし）
 
@@ -27,6 +27,7 @@ Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照
 
 ## アーキテクチャの要点
 
+- **事前準備（PR0）**: Cognito と IAM はコンソールで作る。仕様書の「事前準備（PR0）」に、コンソール手順と同じ内容の AWS CLI コマンド、アプリに渡す環境変数（`COGNITO_REGION`、`COGNITO_USER_POOL_ID`、`COGNITO_CLIENT_ID`、`COGNITO_DOMAIN`、`ADMIN_SUB`）がある。リージョンは ap-northeast-1、セルフサインアップは無効。
 - **SecurityFilterChain は2つ**:
     - `/api/**`: `oauth2-resource-server` で JWT（アクセストークン）を検証。セッションなし。
     - それ以外（画面）: `oauth2-client` の `oauth2Login` で Cognito マネージドログインへリダイレクト（認可コード + PKCE、クライアントシークレットなし）。トークンはサーバーのセッションに置き、ブラウザには持たせない。ログアウトは Cognito の `/logout` へもリダイレクトする。
@@ -39,5 +40,6 @@ Cognito で認証し、Spring Boot 側で「自分の部署の見積だけ参照
 ## 注意点
 
 - data.sql と JPA のテーブル自動生成を併用する場合、`spring.jpa.defer-datasource-initialization=true` が必要。
-- Java 23 は Spring Boot 3.4 以降で正式サポート。PR1 では 3.4 以降を選ぶこと。
+- Spring Boot 4 ではスターター名が変わっている: `spring-boot-starter-webmvc`（旧 `-web`）、`spring-boot-starter-security-oauth2-resource-server`、`spring-boot-starter-security-oauth2-client`。thymeleaf・data-jpa・security は名前そのまま。古い情報の Boot 3 の書き方を持ち込まないこと。
+- IDE（`.idea/misc.xml`）のプロジェクトJDKは openjdk-23 のままなので、JDK 25 に切り替える必要がある。
 - `oauth2-client` の登録に `issuer-uri` を書くと、起動時に Cognito へ OIDC discovery の通信が発生する。テストではクライアント登録をモックに差し替え、ネットワークなしで動かす。
