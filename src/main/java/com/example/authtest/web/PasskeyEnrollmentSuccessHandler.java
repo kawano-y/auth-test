@@ -59,7 +59,9 @@ public class PasskeyEnrollmentSuccessHandler implements AuthenticationSuccessHan
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
-		if (authentication instanceof OAuth2AuthenticationToken token && !hasPasskey(token, request)) {
+		// oauth2Login の成功時にしか使わないので、必ず OAuth2AuthenticationToken が来る
+		OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
+		if (!hasPasskey(token, request)) {
 			String returnUri = ServletUriComponentsBuilder.fromContextPath(request).path("/").toUriString();
 			String passkeyAddUrl = UriComponentsBuilder.fromUriString(cognitoDomain)
 				.path("/passkeys/add")
