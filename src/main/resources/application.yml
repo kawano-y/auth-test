@@ -13,7 +13,9 @@ spring:
             # クライアントシークレットなし（パブリッククライアント）。この場合 Spring Security は自動で PKCE を使う
             client-authentication-method: none
             authorization-grant-type: authorization_code
-            scope: openid,email
+            # aws.cognito.signin.user.admin は、パスキーの登録状況（ListWebAuthnCredentials）をアクセストークンで取るのに必要。
+            # Cognito のアプリクライアントの「OpenID Connect のスコープ」でも許可しておかないと、ログイン時に invalid_scope になる
+            scope: openid,email,aws.cognito.signin.user.admin
             # redirect-uri は既定の {baseUrl}/login/oauth2/code/{registrationId}
             # （= http://localhost:8080/login/oauth2/code/cognito。Cognito のコールバック URL と一致させる）
         provider:
