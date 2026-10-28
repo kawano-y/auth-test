@@ -8,6 +8,8 @@
 <header>
   <span th:text="${loginUser.name}">山田太郎</span>
   （<span th:text="${loginUser.departmentName}">営業1課</span>）
+  <!-- 端末側でパスキーを消したときなどに作り直せるよう、いつでも追加できるようにしておく -->
+  <a th:href="@{/passkeys/add}">パスキーを追加</a>
   <!-- th:action を使うと、Spring Security の CSRF トークンが hidden で自動的に入る -->
   <form th:action="@{/logout}" method="post" style="display: inline">
     <button type="submit">ログアウト</button>

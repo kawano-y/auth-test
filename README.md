@@ -272,3 +272,17 @@ H2 は起動のたびに空になるので、アプリを再起動すると `use
 ```bash
 ./gradlew test --tests 'com.example.authtest.web.PasskeyEnrollmentSuccessHandlerTest'
 ```
+
+### パスキーの追加リンク（PR11）
+
+見積一覧の上部に「パスキーを追加」リンクを置いた。アプリの `/passkeys/add` が Cognito のパスキー登録画面へリダイレクトする（ログイン直後の誘導も同じ `/passkeys/add` を通る）。
+
+パスキーを端末側（Windows や Google パスワードマネージャー）で消しても、Cognito には登録が残る。その状態ではログイン直後の誘導は出ないので、このリンクから作り直す。パスキーは1人で複数登録できる。Cognito に残った古い登録は、本人のアクセストークンで `aws cognito-idp delete-web-authn-credential` を呼んで消す。
+
+1. ログインして見積一覧を開き、「パスキーを追加」を押すと Cognito のパスキー登録画面になる
+2. 登録すると http://localhost:8080/ に戻り、見積一覧が出る
+3. ログアウトして、パスキーでログインできることを確かめる
+
+```bash
+./gradlew test --tests 'com.example.authtest.web.PasskeyControllerTest'
+```
