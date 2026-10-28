@@ -251,3 +251,24 @@ H2 は起動のたびに空になるので、アプリを再起動すると `use
 ```bash
 ./gradlew test --tests 'com.example.authtest.web.AdminUserPageTest'
 ```
+
+### パスキー登録への誘導（PR10）
+
+メールのコードなどでログインしたとき、パスキーをまだ登録していないユーザーは、Cognito のパスキー登録画面（マネージドログインの `/passkeys/add`）へリダイレクトされる。登録済みかどうかは、ログイン時のアクセストークンで Cognito の `ListWebAuthnCredentials` を呼んで確かめる（IAM の権限は使わない）。
+
+起動前に、Cognito コンソールでアプリクライアントの設定を変える（どちらも未設定だとログインに失敗する、または登録画面から戻れない）。
+
+- 「OpenID Connect のスコープ」に `aws.cognito.signin.user.admin` を追加する（アプリ側の要求スコープに足したので、許可されていないと `invalid_scope` になる）
+- 「許可されているコールバック URL」に `http://localhost:8080/` を追加する（登録画面からの戻り先。既存の `http://localhost:8080/login/oauth2/code/cognito` は残す）
+
+ユーザープールのサインインの設定で、パスキーが選択肢に入っている必要もある（Essentials 以上のプラン、依存先 ID は Cognito ドメイン）。
+
+1. ログアウトした状態で http://localhost:8080/ を開き、メールアドレスとコードでログインする
+2. パスキー未登録なら、そのまま Cognito のパスキー登録画面になる。登録すると http://localhost:8080/ に戻り、見積一覧が出る
+3. ログアウトしてもう一度ログインすると、パスキーでログインできる。登録済みなので登録画面は出ず、元の URL に戻る
+4. 登録せずに戻った場合は、次のログインでまた登録画面が出る
+5. スコープが足りないなどで登録状況を取れないときは、ログを警告に出し、登録画面には送らずに普段どおりログインさせる
+
+```bash
+./gradlew test --tests 'com.example.authtest.web.PasskeyEnrollmentSuccessHandlerTest'
+```

@@ -1,7 +1,5 @@
 package com.example.authtest.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +15,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -53,14 +52,16 @@ public class SecurityConfig {
 	@Bean
 	@Order(2)
 	SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
-			LogoutSuccessHandler cognitoLogoutSuccessHandler) throws Exception {
+			LogoutSuccessHandler cognitoLogoutSuccessHandler,
+			AuthenticationSuccessHandler passkeyEnrollmentSuccessHandler) throws Exception {
 		http
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/error").permitAll()
 				.requestMatchers("/admin/**").hasRole("ADMIN")
 				.anyRequest().authenticated())
 			// GrantedAuthoritiesMapper は Bean として登録しておけば oauth2Login が使う（下の idTokenGroupsMapper）
-			.oauth2Login(withDefaults())
+			// ログイン成功時、パスキー未登録なら Cognito のパスキー登録画面へ回す（PasskeyEnrollmentSuccessHandler）
+			.oauth2Login(oauth2 -> oauth2.successHandler(passkeyEnrollmentSuccessHandler))
 			// POST /logout でセッションを破棄し、Cognito 側のログアウトへリダイレクトする
 			.logout(logout -> logout.logoutSuccessHandler(cognitoLogoutSuccessHandler));
 		return http.build();
