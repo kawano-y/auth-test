@@ -38,7 +38,7 @@ class PasskeyEnrollmentSuccessHandlerTest {
 	private final OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
 
 	private final PasskeyEnrollmentSuccessHandler handler = new PasskeyEnrollmentSuccessHandler(passkeyService,
-			authorizedClientRepository, "https://test.auth.example.com", "test-client-id");
+			authorizedClientRepository);
 
 	private final OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(
 			new DefaultOAuth2User(List.of(), Map.of("sub", "user-sub"), "sub"), List.of(), "cognito");
@@ -54,13 +54,12 @@ class PasskeyEnrollmentSuccessHandlerTest {
 	}
 
 	@Test
-	void パスキー未登録ならCognitoのパスキー登録画面へリダイレクト() throws Exception {
+	void パスキー未登録ならパスキー追加へリダイレクト() throws Exception {
 		when(passkeyService.hasPasskey(ACCESS_TOKEN)).thenReturn(false);
 
 		handler.onAuthenticationSuccess(request, response, authentication);
 
-		assertThat(response.getRedirectedUrl()).isEqualTo("https://test.auth.example.com/passkeys/add"
-				+ "?client_id=test-client-id&redirect_uri=http://localhost/");
+		assertThat(response.getRedirectedUrl()).isEqualTo("/passkeys/add");
 	}
 
 	@Test

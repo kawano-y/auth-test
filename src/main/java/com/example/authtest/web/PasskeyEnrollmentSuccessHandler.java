@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -12,8 +11,6 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.authtest.service.PasskeyService;
 
@@ -24,11 +21,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 
 /**
- * 画面ログイン（oauth2Login）の成功時の処理。パスキー未登録のユーザーだけ、Cognito のパスキー登録画面
- * （マネージドログインの /passkeys/add）へリダイレクトする。登録済みなら既定どおり元の URL に戻す。
- *
- * 登録画面からの戻り先（redirect_uri）は Cognito の「許可されているコールバック URL」に入っている必要があるので、
- * 元の URL ではなくトップ（http://localhost:8080/）に固定する。トップは見積一覧へリダイレクトする。
+ * 画面ログイン（oauth2Login）の成功時の処理。パスキー未登録のユーザーだけ、アプリの /passkeys/add
+ * （PasskeyController。そこから Cognito のパスキー登録画面へ）にリダイレクトする。登録済みなら既定どおり元の URL に戻す。
+ * 登録画面からはトップに戻るので、ログイン前に開こうとした URL には戻らない。
  * 登録しないで戻ったユーザーは、次のログインでもまた登録画面に送られる。
  */
 @Component
@@ -43,17 +38,10 @@ public class PasskeyEnrollmentSuccessHandler implements AuthenticationSuccessHan
 
 	private final OAuth2AuthorizedClientRepository authorizedClientRepository;
 
-	private final String cognitoDomain;
-
-	private final String clientId;
-
 	public PasskeyEnrollmentSuccessHandler(PasskeyService passkeyService,
-			OAuth2AuthorizedClientRepository authorizedClientRepository,
-			@Value("${COGNITO_DOMAIN}") String cognitoDomain, @Value("${COGNITO_CLIENT_ID}") String clientId) {
+			OAuth2AuthorizedClientRepository authorizedClientRepository) {
 		this.passkeyService = passkeyService;
 		this.authorizedClientRepository = authorizedClientRepository;
-		this.cognitoDomain = cognitoDomain;
-		this.clientId = clientId;
 	}
 
 	@Override
@@ -62,14 +50,8 @@ public class PasskeyEnrollmentSuccessHandler implements AuthenticationSuccessHan
 		// oauth2Login の成功時にしか使わないので、必ず OAuth2AuthenticationToken が来る
 		OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
 		if (!hasPasskey(token, request)) {
-			String returnUri = ServletUriComponentsBuilder.fromContextPath(request).path("/").toUriString();
-			String passkeyAddUrl = UriComponentsBuilder.fromUriString(cognitoDomain)
-				.path("/passkeys/add")
-				.queryParam("client_id", clientId)
-				.queryParam("redirect_uri", returnUri)
-				.encode()
-				.toUriString();
-			response.sendRedirect(passkeyAddUrl);
+			// Cognito の登録画面の URL は PasskeyController が組み立てる
+			response.sendRedirect(request.getContextPath() + "/passkeys/add");
 			return;
 		}
 		defaultHandler.onAuthenticationSuccess(request, response, authentication);
